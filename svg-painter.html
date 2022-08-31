@@ -1,0 +1,308 @@
+<style>
+  html {
+    background-color: beige;
+    height: 1000px;
+  }
+  .kit {
+    display: block;
+  }
+  .wrapper {
+    display: inline-block;
+    border: 1px solid orange;
+  }
+  svg {
+    display: block;
+    width: 810px;
+    height: 1000px;
+    background-color: aliceblue;
+  }
+  .line2 {
+    display: block;
+  }
+  .colors {
+    display: inline-block;
+  }
+  .colors button {
+    width: 22px;
+    height: 22px;
+    border-radius: 10px;
+    display: inline-block;
+  }
+  .efficiency {
+    display: inline-block;
+  }
+</style>
+<body>
+  <div class="kit">
+    <input type="color" id="colorSelect" style="width: 180px; height: 50px" />
+    <input
+      type="range"
+      id="strokeSelect"
+      style="width: 200px"
+      value="3"
+      min="1"
+      max="33"
+      step="1"
+    />
+    <span style="margin-left: 17px;">────</span>                        
+        <span style="margin-left: 47px;">◯</span>                           
+        <span style="margin-left: 64px;">▯</span>              
+        <span style="margin-left: 66px;">▷</span>                 
+        <span style="margin-left: 65px;">◊</span> 
+    <div class="line2">
+      <span class="colors">
+        <button id="#ed1c24" style="background-color: red"></button>
+        <button id="#ff7f27" style="background-color: orange"></button>
+        <button id="#fff200" style="background-color: yellow"></button>
+        <button id="#22b14c" style="background-color: green"></button>
+        <button id="#00a2e8" style="background-color: aqua"></button>
+        <button id="#3f48cc" style="background-color: blue"></button>
+        <button id="#a349a4" style="background-color: violet"></button>
+      </span>
+      <span class="efficiency">
+        <button class="save" style="width: 98px;">
+          <strong>Save</strong>
+        </button>
+        <button class="clear" style="width: 98px">
+          <strong>Clear</strong>
+        </button>
+      </span>
+      <span>
+        <button onclick="tool='line'" style="width: 80px">
+          <strong>Line</strong>
+        </button>
+        <button onclick="tool='circle'" style="width: 80px">
+          <strong>Circle</strong>
+        </button>
+        <button onclick="tool='rect'" style="width: 80px">
+          <strong>Rect</strong>
+        </button>
+        <button onclick="tool='triangle'" style="width: 80px">
+          <strong>Triangle</strong>
+        </button>
+        <button onclick="tool='diamond'" style="width: 80px">
+          <strong>Diamond</strong>
+        </button>
+                     
+      </span>
+    </div>
+  </div>
+  <div class="wrapper">
+    <svg></svg>
+  </div>
+</body>
+<script>
+    var svg = document.querySelector("svg");
+    var colorSelect = document.querySelector("#colorSelect");
+    var colorSelect2 = document.querySelectorAll(".colors button");
+    var clear = document.querySelector(".clear");
+    var save = document.querySelector(".save");
+    var tool = "line",
+      color = "#ff0000";
+    var pos, startPos, node;
+    svg.addEventListener("mousedown", function (e) {
+      //鼠标左键是1,滚轮键是2,右键是3
+      if (e.which == 1) {
+        //如果按下左键就绑定
+        console.log('e',e);
+        console.log("bind");
+        console.log("svg", svg);
+        pos = mouse(svg);
+        startPos = pos;
+        if (tool == "line") {
+          node = svgElt("path", {
+            d: `M ${pos.x} ${pos.y} L ${pos.x} ${pos.y}`,
+            stroke: colorSelect.value,
+            "stroke-width": strokeSelect.value,
+            "stroke-linecap": "round",
+            fill: "none",
+          });
+        }
+        if (tool == "rect") {
+          node = svgElt("rect", {
+            x: pos.x,
+            y: pos.y,
+            width: 0,
+            height: 0,
+            stroke: colorSelect.value,
+            fill: "none",
+            "stroke-width": strokeSelect.value,
+            // 线段的边缘是圆(故折线圆滑,没有间隙)
+            "stroke-linecap": "round",
+          });
+        }
+        if (tool == "circle") {
+          node = svgElt("ellipse", {
+            cx: pos.x,
+            cy: pos.y,
+            rx: 0,
+            ry: 0,
+            stroke: colorSelect.value,
+            fill: "none",
+            "stroke-width": strokeSelect.value,
+            "stroke-linecap": "round",
+          });
+        }
+        if (tool == "triangle") {
+          node = svgElt("polygon", {
+            points: `${pos.x},${pos.y} ${pos.x},${pos.y} ${pos.x},${pos.y}`,
+            stroke: colorSelect.value,
+            "stroke-width": strokeSelect.value,
+            "stroke-linecap": "round",
+            fill: "none",
+          });
+        }
+        if (tool == "diamond") {
+          node = svgElt("polygon", {
+            points: `${pos.x},${pos.y} ${pos.x},${pos.y} ${pos.x},${pos.y} ${pos.x},${pos.y}`,
+            stroke: colorSelect.value,
+            "stroke-width": strokeSelect.value,
+            "stroke-linecap": "round",
+            fill: "none",
+          });
+        }
+        svg.appendChild(node);
+        window.addEventListener("mousemove", move);
+      }
+    });
+    function move(e) {
+      if (e.which == 0) {
+        // 如果松开就解绑
+        console.log("release");
+        window.removeEventListener("mousemove", move);
+        return;
+      }
+      pos = mouse(svg);
+      if (tool == "line") {
+        var d = node.getAttribute("d");
+        d += `L ${pos.x} ${pos.y}`;
+        node.setAttribute("d", d);
+      }
+      if (tool == "rect") {
+        var width = Math.abs(pos.x - startPos.x);
+        var height = Math.abs(pos.y - startPos.y);
+        node.setAttribute("width", width);
+        node.setAttribute("height", height);
+        // svg不识别负值的长度属性,故起点和终点不要以常规惯性思维考虑
+        if (pos.x > startPos.x && pos.y > startPos.y) {
+          // 此处setAttribute是起始点位置信息
+          // 起点始终是位置小的坐标,否则减下来长度是负值
+          node.setAttribute("x", startPos.x);
+          node.setAttribute("y", startPos.y);
+        }
+        if (pos.x < startPos.x && pos.y < startPos.y) {
+          node.setAttribute("x", pos.x);
+          node.setAttribute("y", pos.y);
+        }
+        if (pos.x > startPos.x && pos.y < startPos.y) {
+          node.setAttribute("x", startPos.x);
+          node.setAttribute("y", pos.y);
+        }
+        if (pos.x < startPos.x && pos.y > startPos.y) {
+          node.setAttribute("x", pos.x);
+          node.setAttribute("y", startPos.y);
+        }
+      }
+      if (tool == "circle") {
+        //  cx 中心点的 x 轴坐标
+        //  rx 水平轴向的圆角半径尺寸
+        var cx = Math.abs((pos.x + startPos.x) / 2);
+        var cy = Math.abs((pos.y + startPos.y) / 2);
+        var rx = Math.abs((pos.x - startPos.x) / 2);
+        var ry = Math.abs((pos.y - startPos.y) / 2);
+        node.setAttribute("cx", cx);
+        node.setAttribute("cy", cy);
+        node.setAttribute("rx", rx);
+        node.setAttribute("ry", ry);
+        if (pos.x > startPos.x && pos.y > startPos.y) {
+          // 此处setAttribute是起始点位置信息
+          // 起点始终是位置小的坐标,否则减下来长度是负值
+          node.setAttribute("x", startPos.x);
+          node.setAttribute("y", startPos.y);
+        }
+        if (pos.x < startPos.x && pos.y < startPos.y) {
+          node.setAttribute("x", pos.x);
+          node.setAttribute("y", pos.y);
+        }
+        if (pos.x > startPos.x && pos.y < startPos.y) {
+          node.setAttribute("x", startPos.x);
+          node.setAttribute("y", pos.y);
+        }
+        if (pos.x < startPos.x && pos.y > startPos.y) {
+          node.setAttribute("x", pos.x);
+          node.setAttribute("y", startPos.y);
+        }
+      }
+      if (tool == "triangle") {
+        var points = node.getAttribute("points");
+        points = `${startPos.x},${pos.y} ${(pos.x + startPos.x) / 2},${
+          startPos.y
+        } ${pos.x},${pos.y}`;
+        node.setAttribute("points", points);
+      }
+      if (tool == "diamond") {
+        var points = node.getAttribute("points");
+        points = `${startPos.x},${(pos.y + startPos.y) / 2} ${
+          (pos.x + startPos.x) / 2
+        },${startPos.y} ${pos.x},${(pos.y + startPos.y) / 2} ${
+          (pos.x + startPos.x) / 2
+        },${pos.y}`;
+        node.setAttribute("points", points);
+      }
+    }
+    // 快捷键撤销操作
+    window.addEventListener("keydown", function (e) {
+      console.log(e);
+      if (e.ctrlKey && e.key == "z") svg.removeChild(svg.lastChild);
+    });
+
+    // 鼠标获取坐标位置
+    function mouse(node) {
+      var nodePos = node.getBoundingClientRect();
+      return {
+        x: window.event.clientX - nodePos.x,
+        y: window.event.clientY - nodePos.y,
+      };
+    }
+    for (var button of colorSelect2) {
+      button.addEventListener("click", function (e) {
+        color = this.getAttribute("id");
+        colorSelect.value = color;
+      });
+    }
+    // 创建svg元素
+    function svgElt(tagName, attrs = {}, ...children) {
+      // NS即namespace 命名空间 
+      var node = document.createElementNS("http://www.w3.org/2000/svg", tagName);
+      for (var key in attrs) {
+        var val = attrs[key];
+        node.setAttribute(key, val);
+      }
+      for (var child of children) {
+        if (typeof child == "string") {
+          child = document.createTextNode(child);
+        }
+        node.appendChild(child);
+      }
+      return node;
+    }
+    // 清空操作
+    clear.addEventListener("click", (e) => {
+      // Array.from(svg.children).forEach((child) => svg.removeChild(child));
+      svg.innerHTML = "";
+    });
+    // 保存操作
+    // 由svg.outerHTML创建字符串构建了个binary large obj文件 这个文件的链接放到a标签
+    // a标签的下载文件名取名
+    // saved为true即保存过这个页面 不会再提示
+    save.addEventListener("click", function () {
+      // binary large obj 文件格式
+      let blob = new Blob([svg.outerHTML], { type: "image/svg+xml" });
+      let link = URL.createObjectURL(blob);
+      let anchor = document.createElement("a");
+      anchor.setAttribute("href", link);
+      anchor.download = "one master piece";
+      anchor.click();
+      saved = true;
+    });
+</script>
